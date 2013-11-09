@@ -155,4 +155,17 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
     }
     return $results;
   }
+
+  /**
+   * Retrieve list of products with much more info using the ImportExport Module
+   *
+   * @return array
+   */
+  public function export()
+  {
+    $product_export = new Mage_ImportExport_Model_Export_Entity_Product;
+    $array_writer = new JumpLink_ImportExport_Model_Export_Adapter_Array;
+    $product_export->setWriter($array_writer);
+    return $product_export->export();
+  }
 }
