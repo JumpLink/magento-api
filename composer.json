@@ -1,0 +1,21 @@
+{
+    "name": "jumplink/magento-api",
+    "type": "magento-module",
+    "description": "Custome Magento API",
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/magento-hackathon/magento-composer-installer"
+        }
+    ],
+    "require": {
+	    "magento-hackathon/magento-composer-installer":"*"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "JumpLink",
+            "email": "jumplink@gmail.com"
+        }
+    ]
+}

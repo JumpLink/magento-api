@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- help:
+ * http://www.gravitywell.co.uk/blog/post/extending-the-magento-api
+ * http://stackoverflow.com/questions/10602972/magento-1-7-setting-customer-group-price-programmatically
+ * http://www.webguys.de/magento/adventskalender/turchen-11-gruppenpreise-uber-die-soap-v2-api/
+-->
+<config>
+    <api>
+        <resources>
+            <jumplink_product_attribute_groupprice translate="title" module="jumplink">
+                <model>JumpLink_API_Model_Product_Attribute_Groupprice_Api</model>
+                <title>Product Attribute Groupprice</title>
+                <methods>
+                    <info translate="title" module="jumplink">
+                        <title>Get Info Groupprice</title>
+                        <method>info</method>
+                    </info>
+                    <update translate="title" module="jumplink">
+                        <title>Update Groupprice</title>
+                        <method>update</method>
+                    </update>
+                </methods>
+                <faults module="jumplink">                   
+                </faults>
+            </jumplink_product_attribute_groupprice>
+            <jumplink_order_creditmemo translate="title" module="jumplink">
+                <model>JumpLink_API_Model_Order_Creditmemo_Api</model>
+                <title>Sale Order Credit Memo</title>
+                <methods>
+                    <delete translate="title" module="jumplink">
+                        <title>Delete Credit Memo</title>
+                        <method>delete</method>
+                    </delete>
+                </methods>
+                <faults module="jumplink">                   
+                </faults>
+            </jumplink_order_creditmemo>
+        </resources>
+        <acl>
+            <resources>
+                <jumplink_product_attribute_groupprice translate="title" module="jumplink">
+                    <title>Product Attribute Groupprice</title>
+                    <info translate="title" module="jumplink">
+                        <title>Get Info Groupprice</title>
+                    </info>
+                    <update translate="update" module="jumplink">
+                        <title>Update Groupprice</title>
+                    </update>
+                </jumplink_product_attribute_groupprice>
+                <jumplink_order_creditmemo translate="title" module="jumplink">
+                    <title>Sale Order Credit Memo</title>
+                    <delete translate="title" module="jumplink">
+                        <title>Delete Credit Memo</title>
+                    </delete>
+                </jumplink_order_creditmemo>
+                <all>
+                </all>
+            </resources>
+        </acl>
+    </api>
+</config>

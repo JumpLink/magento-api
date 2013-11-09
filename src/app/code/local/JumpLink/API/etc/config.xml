@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<config>
+    <modules>
+        <JumpLink_API>
+            <version>0.1.0</version>
+        </JumpLink_API>
+    </modules>
+    <global>
+        <models>
+            <jumplink>
+                <class>JumpLink_API_Model</class>
+            </jumplink>
+        </models>
+    </global>
+</config>
