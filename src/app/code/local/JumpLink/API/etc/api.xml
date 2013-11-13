@@ -7,6 +7,30 @@
 <config>
     <api>
         <resources>
+            <jumplink_category translate="title" module="jumplink">
+                <model>JumpLink_API_Model_Category_Api</model>
+                <title>JumpLink Category API</title>
+                <methods>
+                    <info translate="title" module="jumplink">
+                        <title>Retrieve category data</title>
+                        <method>info</method>
+                    </info>
+                </methods>
+                <faults module="jumplink">
+                </faults>
+            </jumplink_category>
+            <jumplink_product translate="title" module="jumplink">
+                <title>JumpLink Product API</title>
+                <model>JumpLink_API_Model_Category_Api</model>
+                <methods>
+                    <info translate="title" module="jumplink">
+                        <title>Retrieve product</title>
+                        <method>info</method>
+                    </info>
+                </methods>
+                <faults module="jumplink">
+                </faults>
+            </jumplink_product>
             <jumplink_product_attribute_groupprice translate="title" module="jumplink">
                 <model>JumpLink_API_Model_Product_Attribute_Groupprice_Api</model>
                 <title>Product Attribute Groupprice</title>
@@ -38,12 +62,18 @@
         </resources>
         <acl>
             <resources>
+                <jumplink_product translate="title" module="jumplink">
+                    <title>Product API</title>
+                    <info translate="title" module="jumplink">
+                        <title>Get Info</title>
+                    </info>
+                </jumplink_product>
                 <jumplink_product_attribute_groupprice translate="title" module="jumplink">
                     <title>Product Attribute Groupprice</title>
                     <info translate="title" module="jumplink">
                         <title>Get Info Groupprice</title>
                     </info>
-                    <update translate="update" module="jumplink">
+                    <update translate="title" module="jumplink">
                         <title>Update Groupprice</title>
                     </update>
                 </jumplink_product_attribute_groupprice>

@@ -34,4 +34,40 @@
 class JumpLink_API_Model_Category_Api extends Mage_Catalog_Model_Category_Api_V2
 {
 
+  protected function setInfo($parentId = null, $store = null)
+  {
+    $tree = $this->tree($parentId, $store);
+    foreach ($category as $key => $children) {
+      
+    }
+  }
+
+  /**
+   * Retrieve category tree
+   *
+   * @param int $parent
+   * @param string|int $store
+   * @return array
+   */
+  public function tree_info($parentId = null, $store = null)
+  {
+    $tree = $this->tree($parentId, $store);
+    //foreach 
+    return $tree;
+
+  }
+
+  /**
+   * Retrieve category data
+   *
+   * @param int $categoryId
+   * @param string|int $store
+   * @param array $attributes
+   * @return array
+   */
+  public function info($categoryId, $store = null, $attributes = null)
+  {
+    $info = $this->info($categoryId, $store, $attributes);
+    return $info;
+  }
 }

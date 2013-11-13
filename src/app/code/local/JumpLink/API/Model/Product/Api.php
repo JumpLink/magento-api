@@ -2,38 +2,7 @@
 class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
 {
 
-  private $red   = "\033[0;31m";
-  private $blue  = "\033[0;34m";
-  private $reset = "\033[0m";
-
-  public function check_filter($filters) {
-    print_r ($this->blue.json_encode($filters).$this->reset."\n");
-
-    if (isset($filters->filter)) {
-      print_r ($this->blue."filters->filter is set: ".$filters->filter.$this->reset."\n");
-      foreach ($filters->filter as $_filter) {
-        if (!isset($_filter->key)) {
-          print_r ($this->red."filter->key not set ".$this->reset."\n");
-          return "filter->key not set";
-        }
-        else
-          print_r ($this->blue."filter->key is set: ".$_filter->key.$this->reset."\n");
-        if (!isset($_filter->value)) {
-          print_r ($this->red."filter->value not set ".$this->reset."\n");
-          return "filter->value not set";
-        }
-        else
-          print_r ($this->blue."filter->value is set: ".$_filter->value.$this->reset."\n");
-      }
-    } else if(isset($filters->complex_filter)){
-      print_r ($this->blue."filters->complex_filter is set: ".$filters->complex_filter.$this->reset."\n");
-    } else {
-      print_r ($this->red."filters->filter or filters->complex_filter not set".$this->reset."\n");
-      return "filters->complex_filter not set";
-    }
-  }
-
-  private function get_attributes($product) {
+  protected function get_attributes($product) {
     $tmp_result = array(
         'product_id' => $product->getId(),
         'sku'        => $product->getSku(),
@@ -167,5 +136,19 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
     $array_writer = new JumpLink_ImportExport_Model_Export_Adapter_Array;
     $product_export->setWriter($array_writer);
     return $product_export->export();
+  }
+
+  /**
+   * Retrieve product info
+   *
+   * @param int|string $productId
+   * @param string|int $store
+   * @param stdClass $attributes
+   * @return array
+   */
+  public function info($productId, $store = null, $attributes = null, $identifierType = null)
+  {
+    $info = parent::info($productId, $store, $attributes, $identifierType);
+    return $info;
   }
 }
