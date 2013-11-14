@@ -2,74 +2,83 @@
 class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
 {
 
-  protected function get_attribute_type($product, $key) {
-    foreach ($product['set']['attributes'] as $index => $attribute) {
+  protected function extract_attribute_option(&$set, $key) {
+    foreach ($set['attributes'] as $index => $attribute) {
       if($attribute['attribute_code'] == $key) {
-        switch ($attribute['frontend_input']) {
-          case "text":
-            switch ($attribute['additional_fields'][0]["value"]) {
-              case 'validate-digits':
-                return "integer";
-              break;
-              case 'validate-number':
-                return "float";
-              break;
-              case 'validate-email':
-                return "email";
-              break;
-              case 'validate-url':
-                return "url";
-              break;
-              case 'validate-alpha':
-                return "alphanumeric";
-              break;
-              case 'validate-alphanum': // alphanumeric and numeric
-                return "alphanum";
-              break;
-              default:
-                return "text";
-              break;
-            }
-          break;
-          case "select":
-            return "select";
-          break;
-          case "price":
-            return "price";
-          break;
-          case "date":
-            return "date";
-          break;
-          case "textarea":
-            return "textarea";
-          break;
-          case "boolean":
-            return "boolean";
-          break;
-          case "weight":
-            return "weight";
-          break;
-          default:
-            return $attribute['frontend_input'];
-          break;
-        }
+        unset($set['attributes'][$index]);
+        return $attribute;
       }
     }
-    return "not found";
   }
 
-  protected function transform_attribute($product, $key) {
-    $type = $this->get_attribute_type($product, $key);
-    print($type."\n");
-    switch ($type) {
+  protected function set_attribute_type(&$attribute) {
+    if($attribute['options']['attribute_code'] == 'product_id' || $attribute['options']['attribute_code'] == 'category_ids')
+      $attribute['options']['data_type'] = "integer";
+    else
+      switch ($attribute['options']['frontend_input']) {
+        case "text":
+          switch ($attribute['options']['additional_fields'][0]["value"]) {
+            case 'validate-digits':
+              $attribute['options']['data_type'] = "integer";
+            break;
+            case 'validate-number':
+               $attribute['options']['data_type'] = "float";
+            break;
+            case 'validate-email':
+              $attribute['options']['data_type'] = "email";
+            break;
+            case 'validate-url':
+              $attribute['options']['data_type'] = "url";
+            break;
+            case 'validate-alpha':
+              $attribute['options']['data_type'] = "alphanumeric";
+            break;
+            case 'validate-alphanum': // alphanumeric and numeric
+              $attribute['options']['data_type'] = "alphanum";
+            break;
+            default:
+              $attribute['options']['data_type'] = $attribute['options']['frontend_input'];
+            break;
+          }
+        break;
+        case "select":
+        case "price":
+        case "date":
+        case "textarea":
+        case "boolean":
+        case "weight":
+          $attribute['options']['data_type'] = $attribute['options']['frontend_input'];
+        break;
+        case null:
+        default:
+          $attribute['options']['data_type'] = "text";
+        break;
+      }
+  }
+
+  protected function transform_attribute(&$attribute) {
+    
+    switch ($attribute['options']['data_type']) {
       case 'integer':
-        return intval($product[$key]);
+        if(is_array ($attribute['value']))
+          foreach ($attribute['value'] as $key => $value)
+            $attribute['value'][$key] = intval($value);
+        else
+          $attribute['value'] = intval($attribute['value']);
       break;
       case 'float':
-        return floatval($product[$key]);
+        if(is_array ($attribute['value']))
+          foreach ($attribute['value'] as $key => $value)
+            $attribute['value'][$key] = floatval($value);
+        else
+          $attribute['value'] = floatval($attribute['value']);
       break;
       case 'boolean':
-        return boolval($product[$key]);
+        if(is_array ($attribute['value']))
+          foreach ($attribute['value'] as $key => $value)
+            $attribute['value'][$key] = boolval($value);
+        else
+          $attribute['value'] = boolval($attribute['value']);
       break;
       case 'email':
       case 'url':
@@ -81,7 +90,6 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
       case 'date':
       case 'textarea':
       default:
-        return $product[$key];
       break;
     }
   }
@@ -89,14 +97,17 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
 
   protected function normalize(&$product) {
     foreach ($product as $attribute_key => $attribute_value) {
-      if(is_array($attribute_value) && $attribute_key == "set") { // TODO iterate array
-
-      } else {
-        print("attribute_key: $attribute_key\n");
-        $product[$attribute_key] = $this->transform_attribute($product, $attribute_key);
-        print("attribute_value: ".$product[$attribute_key]."\n");
+      if($attribute_key != "set") { // TODO iterate array
+        $product[$attribute_key] = array('value' => $attribute_value, 'options' => $this->extract_attribute_option($product['set'], $attribute_key));
+        $product[$attribute_key]['options']['attribute_code'] = $attribute_key; // Two is Better / doppelt hält besser
+        $this->set_attribute_type($product[$attribute_key]);
+        //print("attribute_key: $attribute_key\n");
+        $this->transform_attribute($product[$attribute_key] );
+        //print("attribute_value: ".$product[$attribute_key]."\n");
       }
     }
+    $product['set']['unused_attributes'] = $product['set']['attributes'];
+    unset($product['set']['attributes']);
   }
 
   protected function export_attributeset($setId) {
