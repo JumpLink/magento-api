@@ -2,51 +2,173 @@
 class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
 {
 
-  protected function get_attributes($product) {
-    $tmp_result = array(
-        'product_id' => $product->getId(),
-        'sku'        => $product->getSku(),
-        'name'       => $product->getName(),
-        'set'        => $product->getAttributeSetId(),
-        'type'       => $product->getTypeId(),
-        'category_ids' => $product->getCategoryIds(),
-        'website_ids'  => $product->getWebsiteIds()
-    );
+  protected function get_attribute_type($product, $key) {
+    foreach ($product['set']['attributes'] as $index => $attribute) {
+      if($attribute['attribute_code'] == $key) {
+        switch ($attribute['frontend_input']) {
+          case "text":
+            switch ($attribute['additional_fields'][0]["value"]) {
+              case 'validate-digits':
+                return "integer";
+              break;
+              case 'validate-number':
+                return "float";
+              break;
+              case 'validate-email':
+                return "email";
+              break;
+              case 'validate-url':
+                return "url";
+              break;
+              case 'validate-alpha':
+                return "alphanumeric";
+              break;
+              case 'validate-alphanum': // alphanumeric and numeric
+                return "alphanum";
+              break;
+              default:
+                return "text";
+              break;
+            }
+          break;
+          case "select":
+            return "select";
+          break;
+          case "price":
+            return "price";
+          break;
+          case "date":
+            return "date";
+          break;
+          case "textarea":
+            return "textarea";
+          break;
+          case "boolean":
+            return "boolean";
+          break;
+          case "weight":
+            return "weight";
+          break;
+          default:
+            return $attribute['frontend_input'];
+          break;
+        }
+      }
+    }
+    return "not found";
+  }
 
-    $allAttributes = array();
-    if (!empty($attributes->attributes)) {
-        $allAttributes = array_merge($allAttributes, $attributes->attributes);
+  protected function transform_attribute($product, $key) {
+    $type = $this->get_attribute_type($product, $key);
+    print($type."\n");
+    switch ($type) {
+      case 'integer':
+        return intval($product[$key]);
+      break;
+      case 'float':
+        return floatval($product[$key]);
+      break;
+      case 'boolean':
+        return boolval($product[$key]);
+      break;
+      case 'email':
+      case 'url':
+      case 'alphanumeric':
+      case 'alphanum':
+      case 'text':
+      case 'select':
+      case 'price':
+      case 'date':
+      case 'textarea':
+      default:
+        return $product[$key];
+      break;
+    }
+  }
+
+
+  protected function normalize(&$product) {
+    foreach ($product as $attribute_key => $attribute_value) {
+      if(is_array($attribute_value) && $attribute_key == "set") { // TODO iterate array
+
+      } else {
+        print("attribute_key: $attribute_key\n");
+        $product[$attribute_key] = $this->transform_attribute($product, $attribute_key);
+        print("attribute_value: ".$product[$attribute_key]."\n");
+      }
+    }
+  }
+
+  protected function export_attributeset($setId) {
+    if (isset($setId)) {
+      $attributeset = new JumpLink_API_Model_Product_Attribute_Set_Api; // TODO set on custructor or init
+      return $attributeset->export($setId);
     } else {
-        foreach ($product->getTypeInstance(true)->getEditableAttributes($product) as $attribute) {
-            if ($this->_isAllowedAttribute($attribute, $attributes)) {
-                $allAttributes[] = $attribute->getAttributeCode();
-            }
-        }
+      print ("attributeset not set!\n");
+      return array();
     }
+  }
 
-    $_additionalAttributeCodes = array();
-    if (!empty($attributes->additional_attributes)) {
-        foreach ($attributes->additional_attributes as $k => $_attributeCode) {
-            $allAttributes[] = $_attributeCode;
-            $_additionalAttributeCodes[] = $_attributeCode;
-        }
+  protected function get_attributeset($setId) {
+    if (isset($setId)) {
+      $attributeset = new JumpLink_API_Model_Product_Attribute_Set_Api; // TODO set on custructor or init
+      return $attributeset->info($setId);
+    } else {
+      print ("attributeset not set!\n");
+      return array();
     }
+  }
 
-    $_additionalAttribute = 0;
-    foreach ($product->getTypeInstance(true)->getEditableAttributes($product) as $attribute) {
-        if ($this->_isAllowedAttribute($attribute, $allAttributes)) {
-            if (in_array($attribute->getAttributeCode(), $_additionalAttributeCodes)) {
-                $tmp_result['additional_attributes'][$_additionalAttribute]['key'] = $attribute->getAttributeCode();
-                $tmp_result['additional_attributes'][$_additionalAttribute]['value'] = $product
-                    ->getData($attribute->getAttributeCode());
-                $_additionalAttribute++;
-            } else {
-                $tmp_result[$attribute->getAttributeCode()] = $product->getData($attribute->getAttributeCode());
-            }
-        }
+  protected function get_attributes($product) {
+    if (isset($product)) {
+      $tmp_result = array(
+          'product_id' => $product->getId(),
+          'sku'        => $product->getSku(),
+          'name'       => $product->getName(),
+          'set'        => $product->getAttributeSetId(),
+          'type'       => $product->getTypeId(),
+          'category_ids' => $product->getCategoryIds(),
+          'website_ids'  => $product->getWebsiteIds()
+      );
+
+      $allAttributes = array();
+      if (!empty($attributes->attributes)) {
+          $allAttributes = array_merge($allAttributes, $attributes->attributes);
+      } else {
+          foreach ($product->getTypeInstance(true)->getEditableAttributes($product) as $attribute) {
+              if ($this->_isAllowedAttribute($attribute, $attributes)) {
+                  $allAttributes[] = $attribute->getAttributeCode();
+              }
+          }
+      }
+
+      $_additionalAttributeCodes = array();
+      if (!empty($attributes->additional_attributes)) {
+          foreach ($attributes->additional_attributes as $k => $_attributeCode) {
+              $allAttributes[] = $_attributeCode;
+              $_additionalAttributeCodes[] = $_attributeCode;
+          }
+      }
+
+      $_additionalAttribute = 0;
+      foreach ($product->getTypeInstance(true)->getEditableAttributes($product) as $attribute) {
+          if ($this->_isAllowedAttribute($attribute, $allAttributes)) {
+              if (in_array($attribute->getAttributeCode(), $_additionalAttributeCodes)) {
+                  $tmp_result['additional_attributes'][$_additionalAttribute]['key'] = $attribute->getAttributeCode();
+                  $tmp_result['additional_attributes'][$_additionalAttribute]['value'] = $product
+                      ->getData($attribute->getAttributeCode());
+                  $_additionalAttribute++;
+              } else {
+                  $tmp_result[$attribute->getAttributeCode()] = $product->getData($attribute->getAttributeCode());
+              }
+          }
+      }
+      //print("product->product_id): ".$tmp_result['product_id']."\n");
+      return $tmp_result;
+    } else {
+      print ("product not set\n");
+      return array();
     }
-    //print("product->product_id): ".$tmp_result['product_id']."\n");
-    return $tmp_result;
   }
 
   /**
@@ -97,6 +219,7 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
 
     foreach ($collection as $product) {
       $tmp_result = $this->get_attributes($product);
+      $tmp_result['set'] = $this->get_attributeset($tmp_result['set']);
       print("product->product_id): ".$tmp_result['product_id']."\n");
       $results[] = $tmp_result;
     }
@@ -119,6 +242,7 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
 
     foreach ($collection as $product) {
       $tmp_result = $this->get_attributes($product);
+      $tmp_result['set'] = $this->get_attributeset($tmp_result['set']);
       print("product->product_id): ".$tmp_result['product_id']."\n");
       $results[] = $tmp_result;
     }
@@ -130,12 +254,42 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
    *
    * @return array
    */
-  public function export()
+  protected function exportAll()
   {
-    $product_export = new Mage_ImportExport_Model_Export_Entity_Product;
-    $array_writer = new JumpLink_ImportExport_Model_Export_Adapter_Array;
+    $product_export = new Mage_ImportExport_Model_Export_Entity_Product; // TODO set on custructor or init
+    $array_writer = new JumpLink_ImportExport_Model_Export_Adapter_Array; // TODO set on custructor or init
     $product_export->setWriter($array_writer);
     return $product_export->export();
+  }
+
+  /**
+   * Retrieve product info
+   * TODO get product info for all stores
+   *
+   * @param int|string $productId
+   * @param string|int $store
+   * @param stdClass $attributes
+   * @return array
+   */
+  protected function exportOne($productId, $store = null, $attributes = null, $identifierType = null)
+  {
+    $info = parent::info($productId, $store, $attributes, $identifierType);
+    $info['set'] = $this->export_attributeset($info['set']);
+    $this->normalize($info);
+    return $info;
+  }
+
+  /**
+   * Retrieve list of products with much more info using the ImportExport Module
+   *
+   * @return array
+   */
+  public function export($productId=null, $store = null, $attributes = null, $identifierType = null)
+  {
+    if (isset($productId))
+      return $this->exportOne($productId, $store, $attributes, $identifierType);
+    else
+      return $this->exportAll();
   }
 
   /**
@@ -149,6 +303,7 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
   public function info($productId, $store = null, $attributes = null, $identifierType = null)
   {
     $info = parent::info($productId, $store, $attributes, $identifierType);
+    $info['set'] = $this->get_attributeset($info['set']);
     return $info;
   }
 }
