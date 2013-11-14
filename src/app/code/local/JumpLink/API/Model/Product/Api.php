@@ -12,7 +12,7 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
   }
 
   protected function set_attribute_type(&$attribute) {
-    if($attribute['options']['attribute_code'] == 'product_id' || $attribute['options']['attribute_code'] == 'category_ids')
+    if($attribute['options']['attribute_code'] == 'category_ids')
       $attribute['options']['data_type'] = "integer";
     else
       switch ($attribute['options']['frontend_input']) {
@@ -97,13 +97,16 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
 
   protected function normalize(&$product) {
     foreach ($product as $attribute_key => $attribute_value) {
-      if($attribute_key != "set") { // TODO iterate array
+      if($attribute_key != "set" && $attribute_key != "product_id" && $attribute_key != "sku") { // TODO iterate array
         $product[$attribute_key] = array('value' => $attribute_value, 'options' => $this->extract_attribute_option($product['set'], $attribute_key));
         $product[$attribute_key]['options']['attribute_code'] = $attribute_key; // Two is Better / doppelt hält besser
         $this->set_attribute_type($product[$attribute_key]);
         //print("attribute_key: $attribute_key\n");
         $this->transform_attribute($product[$attribute_key] );
         //print("attribute_value: ".$product[$attribute_key]."\n");
+      } else {
+        if ($$attribute_key == "product_id")
+          $product[$attribute_key] = intval($attribute_value);
       }
     }
     $product['set']['unused_attributes'] = $product['set']['attributes'];
