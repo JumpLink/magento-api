@@ -101,14 +101,11 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
         $product[$attribute_key] = array('value' => $attribute_value, 'options' => $this->extract_attribute_option($product['set'], $attribute_key));
         $product[$attribute_key]['options']['attribute_code'] = $attribute_key; // Two is Better / doppelt hält besser
         $this->set_attribute_type($product[$attribute_key]);
-        //print("attribute_key: $attribute_key\n");
         $this->transform_attribute($product[$attribute_key] );
-        //print("attribute_value: ".$product[$attribute_key]."\n");
-      } else {
-        if ($$attribute_key == "product_id")
-          $product[$attribute_key] = intval($attribute_value);
       }
     }
+    $product["product_id"] = intval($product["product_id"]);
+    $product['id'] = $product["product_id"];
     $product['set']['unused_attributes'] = $product['set']['attributes'];
     unset($product['set']['attributes']);
   }
