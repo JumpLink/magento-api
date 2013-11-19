@@ -11,54 +11,10 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
     }
   }
 
-  protected function set_attribute_type(&$attribute) {
-    if($attribute['options']['attribute_code'] == 'category_ids')
-      $attribute['options']['data_type'] = "integer";
-    else
-      switch ($attribute['options']['frontend_input']) {
-        case "text":
-          switch ($attribute['options']['additional_fields'][0]["value"]) {
-            case 'validate-digits':
-              $attribute['options']['data_type'] = "integer";
-            break;
-            case 'validate-number':
-               $attribute['options']['data_type'] = "float";
-            break;
-            case 'validate-email':
-              $attribute['options']['data_type'] = "email";
-            break;
-            case 'validate-url':
-              $attribute['options']['data_type'] = "url";
-            break;
-            case 'validate-alpha':
-              $attribute['options']['data_type'] = "alphanumeric";
-            break;
-            case 'validate-alphanum': // alphanumeric and numeric
-              $attribute['options']['data_type'] = "alphanum";
-            break;
-            default:
-              $attribute['options']['data_type'] = $attribute['options']['frontend_input'];
-            break;
-          }
-        break;
-        case "select":
-        case "price":
-        case "date":
-        case "textarea":
-        case "boolean":
-        case "weight":
-          $attribute['options']['data_type'] = $attribute['options']['frontend_input'];
-        break;
-        case null:
-        default:
-          $attribute['options']['data_type'] = "text";
-        break;
-      }
-  }
-
   protected function transform_attribute(&$attribute) {
     
-    switch ($attribute['options']['data_type']) {
+    switch ($attribute['options']['type']) {
+      case 'array of integer':
       case 'integer':
         if(is_array ($attribute['value']))
           foreach ($attribute['value'] as $key => $value)
@@ -67,12 +23,16 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
           $attribute['value'] = intval($attribute['value']);
       break;
       case 'float':
+      case 'weight':
+      case 'price':
+      case 'array of float':
         if(is_array ($attribute['value']))
           foreach ($attribute['value'] as $key => $value)
             $attribute['value'][$key] = floatval($value);
         else
           $attribute['value'] = floatval($attribute['value']);
       break;
+      case 'array of boolean':
       case 'boolean':
         if(is_array ($attribute['value']))
           foreach ($attribute['value'] as $key => $value)
@@ -80,15 +40,13 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
         else
           $attribute['value'] = boolval($attribute['value']);
       break;
+      case 'date':
       case 'email':
       case 'url':
+      case 'alpha':
       case 'alphanumeric':
-      case 'alphanum':
       case 'text':
-      case 'select':
-      case 'price':
-      case 'date':
-      case 'textarea':
+      case 'string':
       default:
       break;
     }
@@ -100,7 +58,6 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
       if($attribute_key != "set" && $attribute_key != "product_id" && $attribute_key != "sku") { // TODO iterate array
         $product[$attribute_key] = array('value' => $attribute_value, 'options' => $this->extract_attribute_option($product['set'], $attribute_key));
         $product[$attribute_key]['options']['attribute_code'] = $attribute_key; // Two is Better / doppelt hält besser
-        $this->set_attribute_type($product[$attribute_key]);
         $this->transform_attribute($product[$attribute_key] );
       }
     }
