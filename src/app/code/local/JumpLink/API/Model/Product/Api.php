@@ -35,10 +35,16 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
       case 'array of boolean':
       case 'boolean':
         if(is_array ($attribute['value']))
-          foreach ($attribute['value'] as $key => $value)
-            $attribute['value'][$key] = boolval($value);
+          foreach ($attribute['value'] as $key => $valuei)
+	    if(function_exists('boolval'))
+              $attribute['value'][$key] = boolval($value);
+            else
+              $attribute['value'][$key] = ($value == true);
         else
-          $attribute['value'] = boolval($attribute['value']);
+          if(function_exists('boolval'))
+            $attribute['value'] = boolval($attribute['value']);
+          else
+            $attribute['value'] = ($attribute['value'] == true);
       break;
       case 'date':
       case 'email':
