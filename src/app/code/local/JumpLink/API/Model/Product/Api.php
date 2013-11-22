@@ -2,43 +2,49 @@
 class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
 {
 
-  protected function extract_attribute_option(&$set, $key) {
+  protected function findAttributeInAttributeSet(&$set, $key) {
     foreach ($set['attributes'] as $index => $attribute) {
       if($attribute['attribute_code'] == $key) {
-        unset($set['attributes'][$index]);
-        return $attribute;
+        return $index;
       }
     }
   }
 
-  protected function transform_attribute(&$attribute) {
+  protected function extract_attribute_option(&$set, $key) {
+    $index = $this->findAttributeInAttributeSet($set, $key);
+    $attribute = $set['attributes'][$index];
+    unset($set['attributes'][$index]);
+    return $attribute;
+  }
+
+  protected function transform_attribute(&$value, $type) {
     
-    switch ($attribute['options']['type']) {
+    switch ($type) {
       case 'array of integer':
       case 'integer':
-        if(is_array ($attribute['value']))
-          foreach ($attribute['value'] as $key => $value)
-            $attribute['value'][$key] = intval($value);
+        if(is_array ($value))
+          foreach ($value as $key => $value)
+            $value[$key] = intval($value);
         else
-          $attribute['value'] = intval($attribute['value']);
+          $value = intval($value);
       break;
       case 'float':
       case 'weight':
       case 'price':
       case 'array of float':
-        if(is_array ($attribute['value']))
-          foreach ($attribute['value'] as $key => $value)
-            $attribute['value'][$key] = floatval($value);
+        if(is_array ($value))
+          foreach ($value as $key => $value)
+            $value[$key] = floatval($value);
         else
-          $attribute['value'] = floatval($attribute['value']);
+          $value = floatval($value);
       break;
       case 'array of boolean':
       case 'boolean':
-        if(is_array ($attribute['value']))
-          foreach ($attribute['value'] as $key => $value)
-            $attribute['value'][$key] = boolval($value);
+        if(is_array ($value))
+          foreach ($value as $key => $value)
+            $value[$key] = boolval($value);
         else
-          $attribute['value'] = boolval($attribute['value']);
+          $value = boolval($value);
       break;
       case 'date':
       case 'email':
@@ -52,19 +58,29 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
     }
   }
 
-
-  protected function normalize(&$product) {
+  protected function normalizeWithIntegratedSet(&$product) {
     foreach ($product as $attribute_key => $attribute_value) {
       if($attribute_key != "set" && $attribute_key != "product_id" && $attribute_key != "sku") { // TODO iterate array
         $product[$attribute_key] = array('value' => $attribute_value, 'options' => $this->extract_attribute_option($product['set'], $attribute_key));
         $product[$attribute_key]['options']['attribute_code'] = $attribute_key; // Two is Better / doppelt hält besser
-        $this->transform_attribute($product[$attribute_key] );
+        $this->transform_attribute($product[$attribute_key]['value'], $product[$attribute_key]['options']['type'] );
       }
     }
     $product["product_id"] = intval($product["product_id"]);
     $product['id'] = $product["product_id"];
     $product['set']['unused_attributes'] = $product['set']['attributes'];
     unset($product['set']['attributes']);
+  }
+
+  protected function normalize(&$product, $attributeset) {
+    foreach ($product as $attribute_key => $attribute_value) {
+      if($attribute_key != "set" && $attribute_key != "product_id" && $attribute_key != "sku") { // TODO iterate array
+        $attributeset_index = $this->findAttributeInAttributeSet($attributeset, $attribute_key);
+        $this->transform_attribute($product[$attribute_key], $attributeset['attributes'][$attributeset_index]['type'] );
+      }
+    }
+    $product["product_id"] = intval($product["product_id"]);
+    $product['id'] = $product["product_id"];
   }
 
   protected function export_attributeset($setId) {
@@ -239,11 +255,20 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
    * @param stdClass $attributes
    * @return array
    */
-  protected function exportOne($productId, $store = null, $attributes = null, $identifierType = null)
+  protected function exportOne($productId, $store = null, $attributes = null, $identifierType = null, $integrate_set = false, $normalize = true)
   {
     $info = parent::info($productId, $store, $attributes, $identifierType);
-    $info['set'] = $this->export_attributeset($info['set']);
-    $this->normalize($info);
+    if($integrate_set) {
+      $info['set'] = $this->export_attributeset($info['set']);
+      if($normalize)
+        $this->normalizeWithIntegratedSet($info);
+    }
+    else {
+      if($normalize) {
+        $attributeset = $this->export_attributeset($info['set']);
+        $this->normalize($info, $attributeset);
+      }
+    }
     return $info;
   }
 
@@ -252,10 +277,10 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
    *
    * @return array
    */
-  public function export($productId=null, $store = null, $attributes = null, $identifierType = null)
+  public function export($productId=null, $store = null, $attributes = null, $identifierType = null, $integrate_set = false, $normalize = true)
   {
     if (isset($productId))
-      return $this->exportOne($productId, $store, $attributes, $identifierType);
+      return $this->exportOne($productId, $store, $attributes, $identifierType, $integrate_set, $normalize);
     else
       return $this->exportAll();
   }
