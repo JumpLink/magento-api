@@ -1,6 +1,19 @@
 <?php
 class JumpLink_API_Model_Product_Attribute_Set_Api extends Mage_Catalog_Model_Product_Attribute_Set_Api_V2 {
   
+  protected function normalize_id(&$item) {
+    if(isset($item['set_id'])) {
+      $item['id'] = intval($item['set_id']);
+      unset($item['set_id']);
+    }
+  }
+
+  protected function normalize_ids(&$collection) {
+    foreach ($collection as $index => $item) {
+      $this->normalize_id($collection[$index]);
+    }
+  }
+
   /**
    * Retrieve attribute set info
    *
@@ -14,7 +27,7 @@ class JumpLink_API_Model_Product_Attribute_Set_Api extends Mage_Catalog_Model_Pr
     $attributeSetModel->load($setId);
     $attributeSetName  = $attributeSetModel->getAttributeSetName();
     $result = array(
-        'set_id'     => $setId,
+        'id'         => intval($setId),
         'name'       => $attributeSetModel->getAttributeSetName(),
         'attributes' => $product_attribute->items($setId)
     );
@@ -31,7 +44,14 @@ class JumpLink_API_Model_Product_Attribute_Set_Api extends Mage_Catalog_Model_Pr
     $product_attribute = new JumpLink_API_Model_Product_Attribute_Api;
     $attributesets = $this->items();
     for ($i=0; $i < count($attributesets); $i++) { 
-      $attributesets[$i]['attributes'] = $product_attribute->items($attributesets[$i]['set_id']);
+      if(isset($attributesets[$i]['set_id'])) {
+        $set_id = $attributesets[$i]['set_id'];
+      } else {
+        $set_id = $attributesets[$i]['id'];
+      }
+      $attributesets[$i]['attributes'] = $product_attribute->items($set_id);
+      $this->normalize_id($attributesets[$i]);
+      //print_r($attributesets[$i]);
     }
     return $attributesets;
   }
@@ -41,7 +61,14 @@ class JumpLink_API_Model_Product_Attribute_Set_Api extends Mage_Catalog_Model_Pr
     $product_attribute = new JumpLink_API_Model_Product_Attribute_Api;
     $attributesets = $this->items();
     for ($i=0; $i < count($attributesets); $i++) { 
-      $attributesets[$i]['attributes'] = $product_attribute->items_info($attributesets[$i]['set_id']);
+      if(isset($attributesets[$i]['set_id'])) {
+        $set_id = $attributesets[$i]['set_id'];
+      } else {
+        $set_id = $attributesets[$i]['id'];
+      }
+      $attributesets[$i]['attributes'] = $product_attribute->items($set_id);
+      $this->normalize_id($attributesets[$i]);
+      //print_r($attributesets[$i]);
     }
     return $attributesets;
   }
@@ -53,7 +80,7 @@ class JumpLink_API_Model_Product_Attribute_Set_Api extends Mage_Catalog_Model_Pr
     $attributeSetModel->load($setId);
     $attributeSetName  = $attributeSetModel->getAttributeSetName();
     $result = array(
-        'set_id'     => $setId,
+        'id'         => intval($setId),
         'name'       => $attributeSetModel->getAttributeSetName(),
         'attributes' => $product_attribute->items_info($setId)
     );

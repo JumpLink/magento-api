@@ -20,7 +20,6 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
   protected function transform_attribute(&$value, $type) {
     
     switch ($type) {
-      case 'array of integer':
       case 'integer':
         if(is_array ($value))
           foreach ($value as $key => $value)
@@ -31,20 +30,40 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
       case 'float':
       case 'weight':
       case 'price':
-      case 'array of float':
         if(is_array ($value))
           foreach ($value as $key => $value)
             $value[$key] = floatval($value);
         else
           $value = floatval($value);
       break;
-      case 'array of boolean':
       case 'boolean':
         if(is_array ($value))
           foreach ($value as $key => $value)
             $value[$key] = ($value == true);
         else
           $value = ($value == true);
+      break;
+      case 'array of integer':
+        if(!is_array ($value))
+          $value = array($value);
+        foreach ($value as $key => $value)
+          $value[$key] = intval($value);
+      break;
+      case 'array of boolean':
+        if(!is_array ($value))
+          $value = array($value);
+        foreach ($value as $key => $value)
+          $value[$key] = ($value == true);
+      break;
+      case 'array of float':
+        if(!is_array ($value))
+          $value = array($value);
+        foreach ($value as $key => $value)
+          $value[$key] = floatval($value);
+      break;
+      case 'array':
+        if(!is_array ($value))
+          $value = array($value);
       break;
       case 'date':
       case 'email':
@@ -58,9 +77,22 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
     }
   }
 
+  protected function normalize_id(&$product) {
+    if(isset($product['product_id'])) {
+      $product['id'] = intval($product['product_id']);
+      unset($product['product_id']);
+    }
+  }
+
+  protected function normalize_ids(&$collection) {
+    foreach ($collection as $index => $product) {
+      $this->normalize_id($collection[$index]);
+    }
+  }
+
   protected function normalizeWithIntegratedSet(&$product) {
     foreach ($product as $attribute_key => $attribute_value) {
-      if($attribute_key != "set" && $attribute_key != "product_id" && $attribute_key != "sku") { // TODO iterate array
+      if($attribute_key != "set" && $attribute_key != "product_id" && $attribute_key != "sku") {
         $product[$attribute_key] = array('value' => $attribute_value, 'options' => $this->extract_attribute_option($product['set'], $attribute_key));
         $product[$attribute_key]['options']['attribute_code'] = $attribute_key; // Two is Better / doppelt hält besser
         $this->transform_attribute($product[$attribute_key]['value'], $product[$attribute_key]['options']['type'] );
@@ -74,13 +106,18 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
 
   protected function normalize(&$product, $attributeset) {
     foreach ($product as $attribute_key => $attribute_value) {
-      if($attribute_key != "set" && $attribute_key != "product_id" && $attribute_key != "sku") { // TODO iterate array
+      if($attribute_key != "set" && $attribute_key != "product_id" && $attribute_key != "sku") {
         $attributeset_index = $this->findAttributeInAttributeSet($attributeset, $attribute_key);
+        //print_r($attribute_key."\n");
+        //print("\n");
+        //print_r($product[$attribute_key]);
+        //print("\n");
+        //print_r($attributeset['attributes'][$attributeset_index]['type']);
+        //print("\n\n");
         $this->transform_attribute($product[$attribute_key], $attributeset['attributes'][$attributeset_index]['type'] );
       }
     }
-    $product["product_id"] = intval($product["product_id"]);
-    $product['id'] = $product["product_id"];
+    $this->normalize_id ($product);
   }
 
   protected function export_attributeset($setId) {
@@ -106,10 +143,10 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
   protected function get_attributes($product) {
     if (isset($product)) {
       $tmp_result = array(
-          'product_id' => $product->getId(),
+          'id'         => intval($product->getId()),
           'sku'        => $product->getSku(),
           'name'       => $product->getName(),
-          'set'        => $product->getAttributeSetId(),
+          'set'        => intval($product->getAttributeSetId()),
           'type'       => $product->getTypeId(),
           'category_ids' => $product->getCategoryIds(),
           'website_ids'  => $product->getWebsiteIds()
@@ -153,6 +190,20 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
       print ("product not set\n");
       return array();
     }
+  }
+
+
+  /**
+   * Retrieve list of products with basic info (id, sku, type, set, name)
+   *
+   * @param array $filters
+   * @param string|int $store
+   * @return array
+   */
+  public function items($filters = null, $store = null) {
+    $result = parent::items($filters, $store);
+    $this->normalize_ids($result);
+    return $result; 
   }
 
   /**
@@ -205,6 +256,7 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
       $tmp_result = $this->get_attributes($product);
       $tmp_result['set'] = $this->get_attributeset($tmp_result['set']);
       print("product->product_id): ".$tmp_result['product_id']."\n");
+      $this->normalize_id ($tmp_result);
       $results[] = $tmp_result;
     }
     return $results;
@@ -228,6 +280,7 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
       $tmp_result = $this->get_attributes($product);
       $tmp_result['set'] = $this->get_attributeset($tmp_result['set']);
       print("product->product_id): ".$tmp_result['product_id']."\n");
+      $this->normalize_id ($tmp_result);
       $results[] = $tmp_result;
     }
     return $results;
@@ -243,7 +296,9 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
     $product_export = new Mage_ImportExport_Model_Export_Entity_Product; // TODO set on custructor or init
     $array_writer = new JumpLink_ImportExport_Model_Export_Adapter_Array; // TODO set on custructor or init
     $product_export->setWriter($array_writer);
-    return $product_export->export();
+    $result = $product_export->export();
+    $this->normalize_ids ($result);
+    return $result;
   }
 
   /**
@@ -297,6 +352,7 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
   {
     $info = parent::info($productId, $store, $attributes, $identifierType);
     $info['set'] = $this->get_attributeset($info['set']);
+    $this->normalize_ids($info);
     return $info;
   }
 }

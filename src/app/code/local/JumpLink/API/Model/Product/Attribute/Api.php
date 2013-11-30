@@ -27,7 +27,6 @@ class JumpLink_API_Model_Product_Attribute_Api extends Mage_Catalog_Model_Produc
             break;
           }
         break;
-
         case "date":
         case "boolean":
         case "weight":
