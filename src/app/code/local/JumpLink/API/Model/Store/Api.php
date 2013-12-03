@@ -23,15 +23,15 @@ class JumpLink_API_Model_Store_Api extends Mage_Core_Model_Store_Api_V2 {
 
         foreach ($stores as $store) {
           $store_results[] = array(
-            'id'                  => intval($store->getId()),         // Integer
-            'code'                => $store->getCode(),               // String
+            'id'                  => intval($store->getId()),          // Integer
+            'code'                => $store->getCode(),                // String
             'website_id'          => intval($store->getWebsiteId()),   // Integer
             'group_id'            => intval($store->getGroupId()),     // Integer
-            'name'                => $store->getName(),               // String
-            'sort_order'          => intval($store->getSortOrder()),  // Integer
+            'name'                => $store->getName(),                // String
+            'sort_order'          => intval($store->getSortOrder()),   // Integer
             'is_active'           => ($store->getIsActive()  == true), // Boolean
-            'locale_code'          => Mage::getStoreConfig('general/locale/code', $result['id']),
-            'logo_src'            => Mage::getStoreConfig('design/header/logo_src'),
+            'locale_code'         => Mage::getStoreConfig('general/locale/code', $store->getId()),
+            'logo_src'            => Mage::getStoreConfig('design/header/logo_src', $store->getId()),
             'base_url'            => $store->getBaseUrl(),
             'base_url_direct_link'=> $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_DIRECT_LINK),
             'base_url_js'         => $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_JS),
@@ -79,15 +79,22 @@ class JumpLink_API_Model_Store_Api extends Mage_Core_Model_Store_Api_V2 {
     $result = array();
     foreach ($stores as $store) {
         $result[] = array(
-          'id'          => intval($store->getId()),         // Integer
-          'code'        => $store->getCode(),               // String
+          'id'          => intval($store->getId()),          // Integer
+          'code'        => $store->getCode(),                // String
           'website_id'  => intval($store->getWebsiteId()),   // Integer
           'group_id'    => intval($store->getGroupId()),     // Integer
-          'name'        => $store->getName(),               // String
-          'sort_order'  => intval($store->getSortOrder()),  // Integer
+          'name'        => $store->getName(),                // String
+          'sort_order'  => intval($store->getSortOrder()),   // Integer
           'is_active'   => ($store->getIsActive()  == true), // Boolean
-          'locale_code'  => Mage::getStoreConfig('general/locale/code', $result['id']),
-          'home_url'    => $store->getHomeUrl()
+          'locale_code' => Mage::getStoreConfig('general/locale/code', $store->getId()),
+          'logo_src'            => Mage::getStoreConfig('design/header/logo_src', $store->getId()),
+          'base_url'            => $store->getBaseUrl(),
+          'base_url_direct_link'=> $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_DIRECT_LINK),
+          'base_url_js'         => $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_JS),
+          'base_url_link'       => $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_LINK),
+          'base_url_media'      => $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_MEDIA),
+          'base_url_skin'       => $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_SKIN),
+          'base_url_web'        => $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB)
         );
     }
 
