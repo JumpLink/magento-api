@@ -2,6 +2,7 @@
 class JumpLink_API_Model_Store_Api extends Mage_Core_Model_Store_Api_V2 {
 
   protected function getStoreInfo($store) {
+    var_dump($store->getData());
     return array(
       'id'                  => intval($store->getId()),          // Integer
       'code'                => $store->getCode(),                // String
@@ -10,15 +11,15 @@ class JumpLink_API_Model_Store_Api extends Mage_Core_Model_Store_Api_V2 {
       'name'                => $store->getName(),                // String
       'sort_order'          => intval($store->getSortOrder()),   // Integer
       'is_active'           => ($store->getIsActive()  == true), // Boolean
+      // How to get store configs: http://alanstorm.com/magento_loading_config_variables
       'locale_code'         => Mage::getStoreConfig('general/locale/code', $store->getId()),
-      'logo_src'            => Mage::getStoreConfig('design/header/logo_src', $store->getId()),
-      'base_url'            => $store->getBaseUrl(),
-      'base_url_direct_link'=> $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_DIRECT_LINK),
-      'base_url_js'         => $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_JS),
-      'base_url_link'       => $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_LINK),
-      'base_url_media'      => $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_MEDIA),
-      'base_url_skin'       => $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_SKIN),
-      'base_url_web'        => $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB)
+      'package_name'        => Mage::getStoreConfig('design/package/name', $store->getId()),
+      'package_locale'      => Mage::getStoreConfig('design/theme/locale', $store->getId()),
+      'theme_template'      => Mage::getStoreConfig('design/theme/template', $store->getId()),
+      'theme_skin'          => Mage::getStoreConfig('design/theme/skin', $store->getId()),
+      'theme_layout'        => Mage::getStoreConfig('design/theme/layout', $store->getId()),
+      'copyright'           => Mage::getStoreConfig('design/footer/copyright', $store->getId())
+      // note: some more settings available
     );
   }
 
