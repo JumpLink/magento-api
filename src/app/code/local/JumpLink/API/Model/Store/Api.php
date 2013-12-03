@@ -1,6 +1,27 @@
 <?php
 class JumpLink_API_Model_Store_Api extends Mage_Core_Model_Store_Api_V2 {
 
+  protected function getStoreInfo($store) {
+    return array(
+      'id'                  => intval($store->getId()),          // Integer
+      'code'                => $store->getCode(),                // String
+      'website_id'          => intval($store->getWebsiteId()),   // Integer
+      'group_id'            => intval($store->getGroupId()),     // Integer
+      'name'                => $store->getName(),                // String
+      'sort_order'          => intval($store->getSortOrder()),   // Integer
+      'is_active'           => ($store->getIsActive()  == true), // Boolean
+      'locale_code'         => Mage::getStoreConfig('general/locale/code', $store->getId()),
+      'logo_src'            => Mage::getStoreConfig('design/header/logo_src', $store->getId()),
+      'base_url'            => $store->getBaseUrl(),
+      'base_url_direct_link'=> $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_DIRECT_LINK),
+      'base_url_js'         => $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_JS),
+      'base_url_link'       => $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_LINK),
+      'base_url_media'      => $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_MEDIA),
+      'base_url_skin'       => $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_SKIN),
+      'base_url_web'        => $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB)
+    );
+  }
+
   /**
    * Retrieve website tree
    *
@@ -19,27 +40,11 @@ class JumpLink_API_Model_Store_Api extends Mage_Core_Model_Store_Api_V2 {
 
     foreach ($websites as $website) {
       foreach ($website->getGroups() as $group) {
+
         $stores = $group->getStores();
 
         foreach ($stores as $store) {
-          $store_results[] = array(
-            'id'                  => intval($store->getId()),          // Integer
-            'code'                => $store->getCode(),                // String
-            'website_id'          => intval($store->getWebsiteId()),   // Integer
-            'group_id'            => intval($store->getGroupId()),     // Integer
-            'name'                => $store->getName(),                // String
-            'sort_order'          => intval($store->getSortOrder()),   // Integer
-            'is_active'           => ($store->getIsActive()  == true), // Boolean
-            'locale_code'         => Mage::getStoreConfig('general/locale/code', $store->getId()),
-            'logo_src'            => Mage::getStoreConfig('design/header/logo_src', $store->getId()),
-            'base_url'            => $store->getBaseUrl(),
-            'base_url_direct_link'=> $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_DIRECT_LINK),
-            'base_url_js'         => $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_JS),
-            'base_url_link'       => $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_LINK),
-            'base_url_media'      => $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_MEDIA),
-            'base_url_skin'       => $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_SKIN),
-            'base_url_web'        => $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB)
-          );
+          $store_results[] = $this->getStoreInfo($store);
         }
         $group_results[] = array(
           'id'                  => intval($group->getId()),
@@ -78,24 +83,7 @@ class JumpLink_API_Model_Store_Api extends Mage_Core_Model_Store_Api_V2 {
     // Make result array
     $result = array();
     foreach ($stores as $store) {
-        $result[] = array(
-          'id'          => intval($store->getId()),          // Integer
-          'code'        => $store->getCode(),                // String
-          'website_id'  => intval($store->getWebsiteId()),   // Integer
-          'group_id'    => intval($store->getGroupId()),     // Integer
-          'name'        => $store->getName(),                // String
-          'sort_order'  => intval($store->getSortOrder()),   // Integer
-          'is_active'   => ($store->getIsActive()  == true), // Boolean
-          'locale_code' => Mage::getStoreConfig('general/locale/code', $store->getId()),
-          'logo_src'            => Mage::getStoreConfig('design/header/logo_src', $store->getId()),
-          'base_url'            => $store->getBaseUrl(),
-          'base_url_direct_link'=> $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_DIRECT_LINK),
-          'base_url_js'         => $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_JS),
-          'base_url_link'       => $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_LINK),
-          'base_url_media'      => $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_MEDIA),
-          'base_url_skin'       => $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_SKIN),
-          'base_url_web'        => $store->getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB)
-        );
+      $result[] = $this->getStoreInfo($store);
     }
 
     return $$result;
@@ -109,29 +97,17 @@ class JumpLink_API_Model_Store_Api extends Mage_Core_Model_Store_Api_V2 {
    */
   public function info($storeId)
   {
-        // Retrieve store info
-        try {
-            $store = Mage::app()->getStore($storeId);
-        } catch (Mage_Core_Model_Store_Exception $e) {
-            $this->_fault('store_not_exists');
-        }
+    // Retrieve store info
+    try {
+        $store = Mage::app()->getStore($storeId);
+    } catch (Mage_Core_Model_Store_Exception $e) {
+        $this->_fault('store_not_exists');
+    }
 
-        if (!$store->getId()) {
-            $this->_fault('store_not_exists');
-        }
+    if (!$store->getId()) {
+        $this->_fault('store_not_exists');
+    }
 
-        // Basic store data
-        $result = array();
-        $result['id']   = intval($store->getId());
-        $result['code']       = $store->getCode();
-        $result['website_id'] = intval($store->getWebsiteId());
-        $result['group_id']   = intval($store->getGroupId());
-        $result['name']       = $store->getName();
-        $result['sort_order'] = intval($store->getSortOrder());
-        $result['is_active']  = ($store->getIsActive() == true);
-        $result['local_code'] = Mage::getStoreConfig('general/locale/code', $result['id']);
-        $result['home_url']   = $store->getHomeUrl();
-
-        return $result;
+    return $this->getStoreInfo($store);
   }
 }
