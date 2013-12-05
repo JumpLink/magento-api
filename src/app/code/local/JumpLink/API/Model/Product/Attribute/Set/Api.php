@@ -35,6 +35,29 @@ class JumpLink_API_Model_Product_Attribute_Set_Api extends Mage_Catalog_Model_Pr
   }
 
   /**
+   * Retrieve attribute set list
+   *
+   * @return array
+   */
+  public function items()
+  {
+    $entityType = Mage::getModel('catalog/product')->getResource()->getEntityType();
+    $collection = Mage::getResourceModel('eav/entity_attribute_set_collection')
+        ->setEntityTypeFilter($entityType->getId());
+
+    $result = array();
+    foreach ($collection as $attributeSet) {
+        $result[] = array(
+            'id'     => intval($attributeSet->getId()),
+            'name'   => $attributeSet->getAttributeSetName()
+        );
+
+    }
+
+    return $result;
+  }
+
+  /**
    * Retrieve attribute set list with attributes
    *
    * @return array
@@ -66,7 +89,7 @@ class JumpLink_API_Model_Product_Attribute_Set_Api extends Mage_Catalog_Model_Pr
       } else {
         $set_id = $attributesets[$i]['id'];
       }
-      $attributesets[$i]['attributes'] = $product_attribute->items($set_id);
+      $attributesets[$i]['attributes'] = $product_attribute->items_info($set_id);
       $this->normalize_id($attributesets[$i]);
       //print_r($attributesets[$i]);
     }

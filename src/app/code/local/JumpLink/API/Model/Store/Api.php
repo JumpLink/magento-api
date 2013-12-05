@@ -75,8 +75,7 @@ class JumpLink_API_Model_Store_Api extends Mage_Core_Model_Store_Api_V2 {
    *
    * @return array
    */
-  public function items()
-  {
+  public function items() {
 
     // Retrieve stores
     $stores = Mage::app()->getStores();
@@ -87,7 +86,7 @@ class JumpLink_API_Model_Store_Api extends Mage_Core_Model_Store_Api_V2 {
       $result[] = $this->getStoreInfo($store);
     }
 
-    return $$result;
+    return $result;
   }
 
   /**
@@ -96,8 +95,7 @@ class JumpLink_API_Model_Store_Api extends Mage_Core_Model_Store_Api_V2 {
    * @param string|int $storeId
    * @return array
    */
-  public function info($storeId)
-  {
+  public function info($storeId) {
     // Retrieve store info
     try {
         $store = Mage::app()->getStore($storeId);

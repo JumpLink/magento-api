@@ -4,8 +4,15 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
 
   protected function findAttributeInAttributeSet(&$set, $key) {
     foreach ($set['attributes'] as $index => $attribute) {
-      if($attribute['attribute_code'] == $key) {
-        return $index;
+      foreach ($attribute as $attribute_code => $attribute_options) {
+        if($attribute_code == $key) {
+          // print("found attribute");
+          // print_r($attribute);
+          // print("\nindex\n");
+          // print_r($index);
+          // print("\n");
+          return $index;
+        }
       }
     }
   }
@@ -20,10 +27,11 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
   protected function transform_attribute(&$value, $type) {
     
     switch ($type) {
+      case 'select':
       case 'integer':
         if(is_array ($value))
-          foreach ($value as $key => $value)
-            $value[$key] = intval($value);
+        foreach ($value as $array_key => $array_value)
+          $value[$array_key] = intval($array_value);
         else
           $value = intval($value);
       break;
@@ -31,39 +39,50 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
       case 'weight':
       case 'price':
         if(is_array ($value))
-          foreach ($value as $key => $value)
-            $value[$key] = floatval($value);
+          foreach ($value as $array_key => $array_value)
+            $value[$array_key] = floatval($array_value);
         else
           $value = floatval($value);
       break;
       case 'boolean':
         if(is_array ($value))
-          foreach ($value as $key => $value)
-            $value[$key] = ($value == true);
+          foreach ($value as $array_key => $array_value)
+            $value[$array_key] = ($array_value == true);
         else
           $value = ($value == true);
       break;
       case 'array of integer':
         if(!is_array ($value))
           $value = array($value);
-        foreach ($value as $key => $value)
-          $value[$key] = intval($value);
+        foreach ($value as $array_key => $array_value)
+          $value[$array_key] = intval($array_value);
       break;
       case 'array of boolean':
         if(!is_array ($value))
           $value = array($value);
-        foreach ($value as $key => $value)
-          $value[$key] = ($value == true);
+        foreach ($value as $array_key => $array_value)
+          $value[$array_key] = ($array_value == true);
       break;
       case 'array of float':
         if(!is_array ($value))
           $value = array($value);
-        foreach ($value as $key => $value)
-          $value[$key] = floatval($value);
+        foreach ($value as $array_key => $array_value)
+          $value[$array_key] = floatval($array_value);
       break;
       case 'array':
         if(!is_array ($value))
           $value = array($value);
+      break;
+      case 'tier_price':
+        foreach ($value as $tp_index => $tierprice) {
+          $value[$tp_index]['price_id']      = intval($tierprice['price_id']);
+          $value[$tp_index]['website_id']    = intval($tierprice['website_id']);
+          $value[$tp_index]['all_groups']    = $tierprice['all_groups'];             // TODO is this an array?
+          $value[$tp_index]['cust_group']    = intval($tierprice['cust_group']);
+          $value[$tp_index]['price']         = floatval($tierprice['price']);
+          $value[$tp_index]['price_qty']     = floatval($tierprice['price_qty']);
+          $value[$tp_index]['website_price'] = floatval($tierprice['website_price']);
+        }
       break;
       case 'date':
       case 'email':
@@ -77,16 +96,44 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
     }
   }
 
-  protected function normalize_id(&$product) {
-    if(isset($product['product_id'])) {
-      $product['id'] = intval($product['product_id']);
-      unset($product['product_id']);
+  protected function transorm_keys (&$product) {
+    foreach ($product as $key => $value) {
+      switch ($key) {
+        case 'product_id':
+          $product['id'] = intval($value);
+          unset ($product['product_id']);
+        break;
+        case 'categories':
+          $product['category_ids'] = $value;
+          unset ($product['categories']);
+        break;
+        case 'websites':
+          $product['website_ids'] = $value;
+          unset ($product['websites']);
+        break;
+        case 'type_id':
+          $product['type'] = $value;
+          unset ($product['type_id']);
+        break;
+        case 'created_at': // make this compatible with sails.js
+          $product['createdAt'] = str_replace(" ", "T", $value).".000Z";
+          unset ($product['created_at']);
+        break;
+        case 'updated_at': // make this compatible with sails.js
+          $product['updatedAt'] = str_replace(" ", "T", $value).".000Z";
+          unset ($product['updated_at']);
+        break;
+        default:
+        # code...
+        break;
+      }
     }
+    return $product;
   }
 
-  protected function normalize_ids(&$collection) {
+  protected function transorm_keys_each (&$collection) {
     foreach ($collection as $index => $product) {
-      $this->normalize_id($collection[$index]);
+      $this->transorm_keys($collection[$index]);
     }
   }
 
@@ -108,16 +155,16 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
     foreach ($product as $attribute_key => $attribute_value) {
       if($attribute_key != "set" && $attribute_key != "product_id" && $attribute_key != "sku") {
         $attributeset_index = $this->findAttributeInAttributeSet($attributeset, $attribute_key);
-        //print_r($attribute_key."\n");
-        //print("\n");
-        //print_r($product[$attribute_key]);
-        //print("\n");
-        //print_r($attributeset['attributes'][$attributeset_index]['type']);
-        //print("\n\n");
-        $this->transform_attribute($product[$attribute_key], $attributeset['attributes'][$attributeset_index]['type'] );
+        // print_r($attribute_key."\n");
+        // print("\n");
+        // print_r($product[$attribute_key]);
+        // print("\n");
+        // print_r($attributeset['attributes'][$attributeset_index][$attribute_key]['type']);
+        // print("\n\n");
+        $this->transform_attribute($product[$attribute_key], $attributeset['attributes'][$attributeset_index][$attribute_key]['type'] );
       }
     }
-    $this->normalize_id ($product);
+    $this->transorm_keys ($product);
   }
 
   protected function export_attributeset($setId) {
@@ -142,14 +189,46 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
 
   protected function get_attributes($product) {
     if (isset($product)) {
+
+      $stock = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product);
+      $stock_data = array(
+        'qty'                                => $stock->getIsQtyDecimal() ? floatval($stock->getQty()) : intval($stock->getQty()),
+        'min_qty'                            => $stock->getIsQtyDecimal() ? floatval($stock->getMinQty()) : intval($stock->getMinQty()),
+        'use_config_min_qty'                 => intval($stock->getUseConfigMinQty()),
+        'is_qty_decimal'                     => ($stock->getIsQtyDecimal() == true),
+        'backorders'                         => $stock->getBackorders(),
+        'use_config_backorders'              => ($stock->getUseConfigBackorders() == true),
+        'min_sale_qty'                       => $stock->getIsQtyDecimal() ? floatval($stock->getMinSaleQty()) : intval($stock->getMinSaleQty()),
+        'use_config_min_sale_qty'            => ($stock->getIUseConfigMinSaleQty() == true),
+        'max_sale_qty'                       => $stock->getIsQtyDecimal() ? floatval($stock->getMaxSaleQty()) : intval($stock->getMaxSaleQty()),
+        'use_config_max_sale_qty'            => ($stock->getIUseConfigMaxSaleQty() == true),
+        'is_in_stock'                        => ($stock->getIsInStock() == true),
+        'low_stock_date'                     => $stock->getLowStockDate(),
+        'notify_stock_qty'                   => ($stock->getNotifyStockQty() == true),
+        'use_config_notify_stock_qty'        => ($stock->getUseConfigNotifyStockQty() == true),
+        'manage_stock'                       => ($stock->getManageStock() == true),
+        'use_config_manage_stock'            => ($stock->getUseConfigManageStock() == true),
+        'stock_status_changed_auto'          => ($stock->getStockStatusChangedAuto() == true),
+        'use_config_qty_increments'          => ($stock->getUseConfigQtyIncrements() == true),
+        'qty_increments'                     => $stock->getIsQtyDecimal() ? floatval($stock->getQtyIncrements()) : intval($stock->getQtyIncrements()),
+        'use_config_enable_qty_inc'          => ($stock->getUseConfigEnableQtyInc() == true),
+        'enable_qty_increments'              => ($stock->getEnableQtyIncrements() == true),
+        'is_decimal_divided'                 => ($stock->getIsDecimalDivided() == true),
+        'stock_status_changed_automatically' => ($stock->getStockStatusChangedAutomatically() == true),
+        'use_config_enable_qty_increments'   => ($stock->getUseConfigEnableQtyIncrements() == true)
+      );
+      //$stock_data = $stock->getData();
+
       $tmp_result = array(
-          'id'         => intval($product->getId()),
-          'sku'        => $product->getSku(),
-          'name'       => $product->getName(),
-          'set'        => intval($product->getAttributeSetId()),
-          'type'       => $product->getTypeId(),
-          'category_ids' => $product->getCategoryIds(),
-          'website_ids'  => $product->getWebsiteIds()
+        'id'         => intval($product->getId()),
+        'sku'        => $product->getSku(),
+        'sku_clean'  => preg_replace("/\/|-|\.|\s/", "", $product->getSku()),
+        'name'       => $product->getName(),
+        'set'        => intval($product->getAttributeSetId()),
+        'type'       => $product->getTypeId(),
+        'category_ids' => $product->getCategoryIds(),
+        'website_ids'  => $product->getWebsiteIds(),
+        'stock_data'  => $stock_data
       );
 
       $allAttributes = array();
@@ -202,7 +281,7 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
    */
   public function items($filters = null, $store = null) {
     $result = parent::items($filters, $store);
-    $this->normalize_ids($result);
+    $this->transorm_keys_each($result);
     return $result; 
   }
 
@@ -255,8 +334,8 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
     foreach ($collection as $product) {
       $tmp_result = $this->get_attributes($product);
       $tmp_result['set'] = $this->get_attributeset($tmp_result['set']);
-      print("product->product_id): ".$tmp_result['product_id']."\n");
-      $this->normalize_id ($tmp_result);
+      //print("product->product_id): ".$tmp_result['product_id']."\n");
+      $this->transorm_keys ($tmp_result);
       $results[] = $tmp_result;
     }
     return $results;
@@ -279,8 +358,8 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
     foreach ($collection as $product) {
       $tmp_result = $this->get_attributes($product);
       $tmp_result['set'] = $this->get_attributeset($tmp_result['set']);
-      print("product->product_id): ".$tmp_result['product_id']."\n");
-      $this->normalize_id ($tmp_result);
+      //print("product->product_id): ".$tmp_result['product_id']."\n");
+      $this->transorm_keys ($tmp_result);
       $results[] = $tmp_result;
     }
     return $results;
@@ -293,35 +372,68 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
    */
   protected function exportAll()
   {
-    $product_export = new Mage_ImportExport_Model_Export_Entity_Product; // TODO set on custructor or init
-    $array_writer = new JumpLink_ImportExport_Model_Export_Adapter_Array; // TODO set on custructor or init
+    $product_export = new Mage_ImportExport_Model_Export_Entity_Product;
+    $array_writer = new JumpLink_ImportExport_Model_Export_Adapter_Array;
     $product_export->setWriter($array_writer);
     $result = $product_export->export();
-    $this->normalize_ids ($result);
+    $this->transorm_keys_each ($result);
     return $result;
+  }
+
+  protected function removeDuplicates($product, $sub_product)
+  {
+    foreach ($sub_product as $key => $attribute) {
+      if($sub_product[$key] == $product[$key])
+        unset($sub_product[$key]);
+    }
+    return $sub_product;
+  }
+
+  protected function removeDuplicatesEachStore($product)
+  {
+    foreach ($product['stores'] as $store_code => $sub_product) {
+      $product['stores'][$store_code] = $this->removeDuplicates($product, $sub_product);
+    }
+    return $product;
   }
 
   /**
    * Retrieve product info
-   * TODO get product info for all stores
    *
    * @param int|string $productId
    * @param string|int $store
+   * @param boolean $all_stores
    * @param stdClass $attributes
+   * @param string $identifierType
+   * @param boolean $integrate_set
+   * @param boolean $normalize
    * @return array
    */
-  protected function exportOne($productId, $store = null, $attributes = null, $identifierType = null, $integrate_set = false, $normalize = true)
+  protected function exportOne($productId, $store = null, $all_stores=true, $attributes = null, $identifierType = null, $integrate_set = false, $normalize = true)
   {
-    $info = parent::info($productId, $store, $attributes, $identifierType);
+    //print("product exportOne productId: $productId store: $store all_stores: $all_stores attributes: $attributes identifierType: $identifierType integrate_set: $integrate_set normalize: $normalize \n");
+    $info = $this->info($productId, $store, $attributes, $identifierType);
+
+    if($integrate_set || $normalize)
+      $attributeset = $this->export_attributeset($info['set']);
+
     if($integrate_set) {
-      $info['set'] = $this->export_attributeset($info['set']);
+      $info['set'] = $attributeset;
       if($normalize)
         $this->normalizeWithIntegratedSet($info);
-    }
-    else {
+    } else {
       if($normalize) {
-        $attributeset = $this->export_attributeset($info['set']);
         $this->normalize($info, $attributeset);
+      }
+    }
+
+    if($all_stores) {
+      $info['stores'] = array();
+      $store_api = new JumpLink_API_Model_Store_Api;
+      $stores = $store_api->items();
+      foreach ($stores as $key => $current_store) {
+        $info['stores'][$current_store['code']] = $this->exportOne($productId, $current_store['code'], false, $attributes, $identifierType, $integrate_set, $normalize);
+        $info['stores'][$current_store['code']] = $this->removeDuplicates($info, $info['stores'][$current_store['code']]);
       }
     }
     return $info;
@@ -332,10 +444,13 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
    *
    * @return array
    */
-  public function export($productId=null, $store = null, $attributes = null, $identifierType = null, $integrate_set = false, $normalize = true)
+  public function export($productId=null, $store = null, $all_stores=true, $attributes = null, $identifierType = null, $integrate_set = false, $normalize = true)
   {
+    if ($all_stores)
+      $store = null;
+
     if (isset($productId))
-      return $this->exportOne($productId, $store, $attributes, $identifierType, $integrate_set, $normalize);
+      return $this->exportOne($productId, $store, $all_stores, $attributes, $identifierType, $integrate_set, $normalize);
     else
       return $this->exportAll();
   }
@@ -350,9 +465,11 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
    */
   public function info($productId, $store = null, $attributes = null, $identifierType = null)
   {
-    $info = parent::info($productId, $store, $attributes, $identifierType);
-    $info['set'] = $this->get_attributeset($info['set']);
-    $this->normalize_ids($info);
+    //$info = parent::info($productId, $store, $attributes, $identifierType);
+    $product = $this->_getProduct($productId, $store, $identifierType);
+    $info = $this->get_attributes($product);
+    //$info['set'] = $this->get_attributeset($info['set']);
+    //$this->transorm_keys_each($info);
     return $info;
   }
 }
