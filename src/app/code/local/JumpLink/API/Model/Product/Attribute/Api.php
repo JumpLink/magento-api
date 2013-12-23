@@ -6,6 +6,10 @@ class JumpLink_API_Model_Product_Attribute_Api extends Mage_Catalog_Model_Produc
       $attribute['type'] = "array of integer";
     else if ($attribute['attribute_code'] == 'tier_price')
       $attribute['type'] = "tier_price";
+    else if ($attribute['attribute_code'] == 'updated_at' || $attribute['attribute_code'] == 'created_at')
+      $attribute['type'] = "date";
+    else if ($attribute['attribute_code'] == 'status')
+      $attribute['type'] = "string";
     else
       switch ($attribute['frontend_input']) {
         case "text":
@@ -40,10 +44,35 @@ class JumpLink_API_Model_Product_Attribute_Api extends Mage_Catalog_Model_Produc
           $attribute['type'] = "text";
         break;
         case null:
+          $attribute['type'] = "string";
+        break;
         default:
           $attribute['type'] = $attribute['frontend_input'];
         break;
       }
+    return $attribute;
+  }
+
+
+  protected function change_attribute_code ($attribute) {
+    switch ($attribute['code']) {
+      case 'updated_at':
+        $attribute['code'] = 'updatedAt';
+      break;
+      case 'created_at':
+        $attribute['code'] = 'createdAt';
+      break;
+      // WORKAROUND maybe move to sails.js?
+      // case 'price_type':
+      // case 'sku_type':
+      // case 'weight_type':
+      // case 'shipment_type':
+      // case 'links_purchased_separately':
+      // case 'samples_title':
+      // case 'links_title':
+      //   $attribute['required'] = false;
+      // break;
+    }
     return $attribute;
   }
 
@@ -111,15 +140,18 @@ class JumpLink_API_Model_Product_Attribute_Api extends Mage_Catalog_Model_Produc
   }
 
   protected function add_default_attributes ($normalized_attributes) {
-    $normalized_attributes[]        = array("stock_data" => array("required" => true,  "unique" => false, "type" => "json"));
+    $normalized_attributes[]        = array("stock_data" => array("required" => true,  "unique" => false, "type" => "stock_data"));
     $normalized_attributes[]        = array("id" => array("required" => true,  "unique" => true,  "type" => "integer"));
     $normalized_attributes[]        = array("website_ids" => array("required" => true,  "unique" => false, "type" => "array of integer"));
+    $normalized_attributes[]        = array("set" => array("required" => true,  "unique" => false, "type" => "integer"));
+    $normalized_attributes[]        = array("stores" => array("required" => false,  "unique" => false, "type" => "json"));
     return $normalized_attributes;
   }
 
   protected function normalize_attribute ($attribute) {
     $attribute = $this->set_attribute_type($attribute);
     $attribute = $this->transorm_datatypes($attribute);
+    $attribute = $this->change_attribute_code($attribute);
     $attribute = $this->set_attribute_code_as_index($attribute);
     return $attribute;
   }
@@ -181,6 +213,31 @@ class JumpLink_API_Model_Product_Attribute_Api extends Mage_Catalog_Model_Produc
   }
 
   /**
+   * Return true if looking_attribute_code exists in current_attributes list
+   */
+  protected function attributeExists ($current_attributes, $looking_attribute_code) {
+    foreach ($current_attributes as $index => $attribute) {
+      reset($attribute);
+      $attribute_code = key($attribute);
+      if($attribute_code == $looking_attribute_code)
+        return true;
+    }
+    return false;
+  }
+
+  /**
+   * set required true only id this attribute exists in all attribute sets
+   */
+  protected function checkIfAllAttributesInCurrentAttributes ($current_attributes, $result_attributes) {
+    foreach ($result_attributes as $attribute_code => $result_attribute) {
+      if(!$this->attributeExists($current_attributes, $attribute_code)) {
+        $result_attributes[$attribute_code]['required'] = false;
+      }
+    }
+    return $result_attributes;
+  }
+
+  /**
    * Get full list of all avaible attributes in all attributesets
    *
    * @return array
@@ -191,10 +248,30 @@ class JumpLink_API_Model_Product_Attribute_Api extends Mage_Catalog_Model_Produc
     $attributesets = $attributeset_api->export();
     $result = array();
     foreach ($attributesets as $as_key => $attributeset) {
-      foreach ($attributesets[$as_key]['attributes'] as $attribute_code => $attribute) {
-        $result[$attribute_code] = $attribute;
-        //TODO merge required
+      foreach ($attributesets[$as_key]['attributes'] as $index => $attribute) {
+        // print("index");
+        // print_r($index);
+        reset($attribute);
+        $attribute_code = key($attribute);
+        // Merge previous setted attribute with current attribute
+        if(isset($result[$attribute_code])) {
+          // required is true only if it is true in all attribute sets
+          if($result[$attribute_code]['required'] === true) {
+            $result[$attribute_code]['required'] = $attribute[$attribute_code]['required'];
+          } else {
+            $result[$attribute_code]['required'] = false;
+          }
+          // unique is true only if it is true in all attribute sets
+          if($result[$attribute_code]['unique'] === true) {
+            $result[$attribute_code]['unique'] = $attribute[$attribute_code]['unique'];
+          } else {
+            $result[$attribute_code]['unique'] = false;
+          }
+        } else {
+          $result[$attribute_code] = $attribute[$attribute_code];
+        }
       }
+      $result = $this->checkIfAllAttributesInCurrentAttributes($attributesets[$as_key]['attributes'], $result);
     }
     return $result;
   }

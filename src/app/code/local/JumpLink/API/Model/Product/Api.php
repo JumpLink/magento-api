@@ -103,6 +103,9 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
           $product['id'] = intval($value);
           unset ($product['product_id']);
         break;
+        case 'sku':
+          $product['sku_clean'] = preg_replace("/\/|-|\.|\s/", "", $value); // add sku_clean, do not unset sku
+        break;
         case 'categories':
           $product['category_ids'] = $value;
           unset ($product['categories']);
@@ -122,6 +125,19 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
         case 'updated_at': // make this compatible with sails.js
           $product['updatedAt'] = str_replace(" ", "T", $value).".000Z";
           unset ($product['updated_at']);
+        break;
+        case 'status': // make this compatible with sails.js
+          switch ($product['status']) {
+            case 0:
+              $product['status'] = "unset";
+            break;
+            case 1:
+              $product['status'] = "activated";
+            break;
+            case 2:
+              $product['status'] = "disabled";
+            break;
+          }
         break;
         default:
         # code...
@@ -192,43 +208,55 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
 
       $stock = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product);
       $stock_data = array(
-        'qty'                                => $stock->getIsQtyDecimal() ? floatval($stock->getQty()) : intval($stock->getQty()),
-        'min_qty'                            => $stock->getIsQtyDecimal() ? floatval($stock->getMinQty()) : intval($stock->getMinQty()),
-        'use_config_min_qty'                 => intval($stock->getUseConfigMinQty()),
-        'is_qty_decimal'                     => ($stock->getIsQtyDecimal() == true),
-        'backorders'                         => $stock->getBackorders(),
-        'use_config_backorders'              => ($stock->getUseConfigBackorders() == true),
-        'min_sale_qty'                       => $stock->getIsQtyDecimal() ? floatval($stock->getMinSaleQty()) : intval($stock->getMinSaleQty()),
-        'use_config_min_sale_qty'            => ($stock->getIUseConfigMinSaleQty() == true),
-        'max_sale_qty'                       => $stock->getIsQtyDecimal() ? floatval($stock->getMaxSaleQty()) : intval($stock->getMaxSaleQty()),
-        'use_config_max_sale_qty'            => ($stock->getIUseConfigMaxSaleQty() == true),
-        'is_in_stock'                        => ($stock->getIsInStock() == true),
-        'low_stock_date'                     => $stock->getLowStockDate(),
-        'notify_stock_qty'                   => ($stock->getNotifyStockQty() == true),
-        'use_config_notify_stock_qty'        => ($stock->getUseConfigNotifyStockQty() == true),
-        'manage_stock'                       => ($stock->getManageStock() == true),
-        'use_config_manage_stock'            => ($stock->getUseConfigManageStock() == true),
-        'stock_status_changed_auto'          => ($stock->getStockStatusChangedAuto() == true),
-        'use_config_qty_increments'          => ($stock->getUseConfigQtyIncrements() == true),
-        'qty_increments'                     => $stock->getIsQtyDecimal() ? floatval($stock->getQtyIncrements()) : intval($stock->getQtyIncrements()),
-        'use_config_enable_qty_inc'          => ($stock->getUseConfigEnableQtyInc() == true),
-        'enable_qty_increments'              => ($stock->getEnableQtyIncrements() == true),
-        'is_decimal_divided'                 => ($stock->getIsDecimalDivided() == true),
-        'stock_status_changed_automatically' => ($stock->getStockStatusChangedAutomatically() == true),
-        'use_config_enable_qty_increments'   => ($stock->getUseConfigEnableQtyIncrements() == true)
+        'qty'                                => $stock->getIsQtyDecimal() ? floatval($stock->getQty()) : intval($stock->getQty())
+        , 'min_qty'                            => $stock->getIsQtyDecimal() ? floatval($stock->getMinQty()) : intval($stock->getMinQty())
+        , 'use_config_min_qty'                 => intval($stock->getUseConfigMinQty())
+        , 'is_qty_decimal'                     => ($stock->getIsQtyDecimal() == true)
+        , 'backorders'                         => $stock->getBackorders()
+        , 'use_config_backorders'              => ($stock->getUseConfigBackorders() == true)
+        , 'min_sale_qty'                       => $stock->getIsQtyDecimal() ? floatval($stock->getMinSaleQty()) : intval($stock->getMinSaleQty())
+        , 'use_config_min_sale_qty'            => ($stock->getIUseConfigMinSaleQty() == true)
+        , 'max_sale_qty'                       => $stock->getIsQtyDecimal() ? floatval($stock->getMaxSaleQty()) : intval($stock->getMaxSaleQty())
+        , 'use_config_max_sale_qty'            => ($stock->getIUseConfigMaxSaleQty() == true)
+        , 'is_in_stock'                        => ($stock->getIsInStock() == true)
+        , 'low_stock_date'                     => $stock->getLowStockDate()
+        , 'notify_stock_qty'                   => ($stock->getNotifyStockQty() == true)
+        , 'use_config_notify_stock_qty'        => ($stock->getUseConfigNotifyStockQty() == true)
+        , 'manage_stock'                       => ($stock->getManageStock() == true)
+        , 'use_config_manage_stock'            => ($stock->getUseConfigManageStock() == true)
+        , 'stock_status_changed_auto'          => ($stock->getStockStatusChangedAuto() == true)
+        , 'use_config_qty_increments'          => ($stock->getUseConfigQtyIncrements() == true)
+        , 'qty_increments'                     => $stock->getIsQtyDecimal() ? floatval($stock->getQtyIncrements()) : intval($stock->getQtyIncrements())
+        , 'use_config_enable_qty_inc'          => ($stock->getUseConfigEnableQtyInc() == true)
+        , 'enable_qty_increments'              => ($stock->getEnableQtyIncrements() == true)
+        , 'is_decimal_divided'                 => ($stock->getIsDecimalDivided() == true)
+        , 'stock_status_changed_automatically' => ($stock->getStockStatusChangedAutomatically() == true)
+        , 'use_config_enable_qty_increments'   => ($stock->getUseConfigEnableQtyIncrements() == true)
       );
       //$stock_data = $stock->getData();
 
       $tmp_result = array(
-        'id'         => intval($product->getId()),
-        'sku'        => $product->getSku(),
-        'sku_clean'  => preg_replace("/\/|-|\.|\s/", "", $product->getSku()),
-        'name'       => $product->getName(),
-        'set'        => intval($product->getAttributeSetId()),
-        'type'       => $product->getTypeId(),
-        'category_ids' => $product->getCategoryIds(),
-        'website_ids'  => $product->getWebsiteIds(),
-        'stock_data'  => $stock_data
+        'id'                               => intval($product->getId())
+        , 'sku'                            => $product->getSku()
+        , 'name'                           => $product->getName()
+        , 'set'                            => intval($product->getAttributeSetId())
+        , 'sku_type'                       => $product->getSkuType()
+        //, 'sku_type'                       => $product->getData('sku_type')
+        , 'type'                           => $product->getTypeId()
+        , 'category_ids'                   => $product->getCategoryIds()
+        , 'website_ids'                    => $product->getWebsiteIds()
+        , 'stock_data'                     => $stock_data
+        , 'weight_type'                    => $product->getWeightType()
+        //, 'weight_type'                    => $product->getData('weight_type')
+        , 'price_type'                     => $product->getPriceType()
+        //, 'price_type'                     => $product->getData('price_type')
+        , 'shipment_type'                  => $product->getShipmentType()
+        , 'links_purchased_separately'     => $product->getLinksPurchasedSeparately()
+        //, 'links_purchased_separately'     => $product->getData('links_purchased_separately')
+        , 'samples_title'                  => $product->getSamplesTitle()
+        //, 'samples_title'                  => $product->getData('samples_title')
+        , 'price_view'                     => $product->getPriceView()
+        , 'links_title'                    => $product->getLinksTitle
       );
 
       $allAttributes = array();
