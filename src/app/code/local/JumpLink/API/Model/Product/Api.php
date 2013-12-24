@@ -24,9 +24,18 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
     return $attribute;
   }
 
-  protected function transform_attribute(&$value, $type) {
+  protected function find_name_for_multiselect_id($multiselect_options, $id) {
+    foreach ($multiselect_options as $index => $value) {
+      if($value['value'] == $id) {
+        return $value['label'];
+      }
+    }
+    return null;
+  }
+
+  protected function transform_attribute(&$value, $set_options) {
     
-    switch ($type) {
+    switch ($set_options['type']) {
       case 'select':
       case 'integer':
         if(is_array ($value))
@@ -83,6 +92,16 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
           $value[$tp_index]['price_qty']     = floatval($tierprice['price_qty']);
           $value[$tp_index]['website_price'] = floatval($tierprice['website_price']);
         }
+      break;
+      case 'multiselect':
+        $value = explode(',', $value); // split string at all ','-chars
+        // print("\nset_options for multiselect\n");
+        // print_r($set_options);
+        foreach ($value as $array_key => $array_value) {
+          $value[$array_key] = $this->find_name_for_multiselect_id($set_options['options'], $array_value); // TODO check if this is also work for integrated set
+        }
+        // print("\nmultiselect values\n");
+        // print_r($value);
       break;
       case 'date':
       case 'email':
@@ -158,7 +177,7 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
       if($attribute_key != "set" && $attribute_key != "product_id" && $attribute_key != "sku") {
         $product[$attribute_key] = array('value' => $attribute_value, 'options' => $this->extract_attribute_option($product['set'], $attribute_key));
         $product[$attribute_key]['options']['attribute_code'] = $attribute_key; // Two is Better / doppelt hält besser
-        $this->transform_attribute($product[$attribute_key]['value'], $product[$attribute_key]['options']['type'] );
+        $this->transform_attribute($product[$attribute_key]['value'], $product[$attribute_key]['options'] );
       }
     }
     $product["product_id"] = intval($product["product_id"]);
@@ -177,7 +196,7 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
         // print("\n");
         // print_r($attributeset['attributes'][$attributeset_index][$attribute_key]['type']);
         // print("\n\n");
-        $this->transform_attribute($product[$attribute_key], $attributeset['attributes'][$attributeset_index][$attribute_key]['type'] );
+        $this->transform_attribute($product[$attribute_key], $attributeset['attributes'][$attributeset_index][$attribute_key] );
       }
     }
     $this->transorm_keys ($product);

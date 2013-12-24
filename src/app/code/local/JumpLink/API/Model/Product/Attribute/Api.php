@@ -37,7 +37,8 @@ class JumpLink_API_Model_Product_Attribute_Api extends Mage_Catalog_Model_Produc
         case "boolean":
         case "weight":
         case "price":
-        case "select": // TODO
+        case "select":
+        case "multiselect":
           $attribute['type'] = $attribute['frontend_input'];
         break;
         case "textarea":
