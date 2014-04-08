@@ -146,6 +146,7 @@ class JumpLink_API_Model_Product_Attribute_Api extends Mage_Catalog_Model_Produc
     $normalized_attributes[]        = array("website_ids" => array("required" => true,  "unique" => false, "type" => "array of integer"));
     $normalized_attributes[]        = array("set" => array("required" => true,  "unique" => false, "type" => "integer"));
     $normalized_attributes[]        = array("stores" => array("required" => false,  "unique" => false, "type" => "json"));
+    $normalized_attributes[]        = array("type" => array("required" => true,  "unique" => false, "type" => "string"));
     return $normalized_attributes;
   }
 

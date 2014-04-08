@@ -2,7 +2,7 @@
 class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
 {
 
-  protected function findAttributeInAttributeSet(&$set, $key) {
+  protected function find_attribute_in_attributeset(&$set, $key) {
     foreach ($set['attributes'] as $index => $attribute) {
       foreach ($attribute as $attribute_code => $attribute_options) {
         if($attribute_code == $key) {
@@ -18,7 +18,7 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
   }
 
   protected function extract_attribute_option(&$set, $key) {
-    $index = $this->findAttributeInAttributeSet($set, $key);
+    $index = $this->find_attribute_in_attributeset($set, $key);
     $attribute = $set['attributes'][$index];
     unset($set['attributes'][$index]);
     return $attribute;
@@ -172,7 +172,7 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
     }
   }
 
-  protected function normalizeWithIntegratedSet(&$product) {
+  protected function normalize_with_integrated_set(&$product) {
     foreach ($product as $attribute_key => $attribute_value) {
       if($attribute_key != "set" && $attribute_key != "product_id" && $attribute_key != "sku") {
         $product[$attribute_key] = array('value' => $attribute_value, 'options' => $this->extract_attribute_option($product['set'], $attribute_key));
@@ -189,7 +189,7 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
   protected function normalize(&$product, $attributeset) {
     foreach ($product as $attribute_key => $attribute_value) {
       if($attribute_key != "set" && $attribute_key != "product_id" && $attribute_key != "sku") {
-        $attributeset_index = $this->findAttributeInAttributeSet($attributeset, $attribute_key);
+        $attributeset_index = $this->find_attribute_in_attributeset($attributeset, $attribute_key);
         // print_r($attribute_key."\n");
         // print("\n");
         // print_r($product[$attribute_key]);
@@ -467,7 +467,7 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
     if($integrate_set) {
       $info['set'] = $attributeset;
       if($normalize)
-        $this->normalizeWithIntegratedSet($info);
+        $this->normalize_with_integrated_set($info);
     } else {
       if($normalize) {
         $this->normalize($info, $attributeset);

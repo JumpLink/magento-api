@@ -2,7 +2,7 @@
 class JumpLink_API_Model_Store_Api extends Mage_Core_Model_Store_Api_V2 {
 
   protected function getStoreInfo($store) {
-    var_dump($store->getData());
+    // var_dump($store->getData());
     return array(
       'id'                  => intval($store->getId()),          // Integer
       'code'                => $store->getCode(),                // String
