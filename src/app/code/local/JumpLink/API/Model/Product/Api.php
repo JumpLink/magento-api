@@ -413,7 +413,7 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
   }
 
   /**
-   * Retrieve list of products with basic info using the ImportExport Module
+   * Retrieve list of products with much more info using the ImportExport Module
    *
    * @return array
    */
@@ -487,7 +487,7 @@ class JumpLink_API_Model_Product_Api extends Mage_Catalog_Model_Product_Api_V2
   }
 
   /**
-   * Retrieve list of products with basic info or one product with much more info using the ImportExport Module
+   * Retrieve list of products with much more info using the ImportExport Module
    *
    * @return array
    */
